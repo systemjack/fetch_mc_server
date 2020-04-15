@@ -10,14 +10,13 @@ import hashlib
 # TODO: optional symlink to update
 
 versions = requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()
-
-
 # {u'release': u'1.15.2', u'snapshot': u'20w15a'}
 release = versions['latest']['release']
-print "fetching current release: {}".format(release)
 
 
-# {u'url': u'https://launchermeta.mojang.com/v1/packages/86add1e0b35aed5cf7dc0d60c4baadfb0e9e7bc7/1.15.2.json', u'releaseTime': u'2020-01-17T10:03:52+00:00', u'type': u'release', u'id': u'1.15.2', u'time': u'2020-03-18T16:49:45+00:00'}
+print "fetching release: {}".format(release)
+
+
 url = None
 for v in versions['versions']:
     if v['id'] == release:
@@ -27,6 +26,7 @@ for v in versions['versions']:
 if not url:
     print "error: not able to find url"
     sys.exit(1)
+# {u'url': u'https://launchermeta.mojang.com/v1/packages/86add1e0b35aed5cf7dc0d60c4baadfb0e9e7bc7/1.15.2.json', u'releaseTime': u'2020-01-17T10:03:52+00:00', u'type': u'release', u'id': u'1.15.2', u'time': u'2020-03-18T16:49:45+00:00'}
 
 
 print "fetching version metadata: {}".format(url)
@@ -37,10 +37,12 @@ server = meta['downloads']['server']
 
 
 # download
-dest = "{}_{}".format(release, server['url'].split('/')[-1])
+dest = "minecraft_{}_{}".format(release, server['url'].split('/')[-1])
+if os.path.isfile(dest):
+    # TODO: add force option
+    print "info: file already present: {}".format(dest)
+    sys.exit(0)
 print "downloading to: {}".format(dest)
-# TODO: make idempotent so will not re-download same file to work as cron job
-# https://stackoverflow.com/questions/16694907/download-large-file-in-python-with-requests
 with requests.get(server['url'], stream=True) as r:
     r.raise_for_status()
     with open(dest, 'wb') as f:
