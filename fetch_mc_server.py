@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import requests
+import hashlib
 
-# TODO: refactor to class
-
+# TODO: proper logging
 # TODO: optional release param or latest snapshot
+# TODO: optional symlink to update
 
 versions = requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()
 
@@ -39,19 +41,38 @@ print "downloading to: {}".format(dest)
 with requests.get(server['url'], stream=True) as r:
     r.raise_for_status()
     with open(dest, 'wb') as f:
-        sys.stdout.write("\n")
-        for chunk in r.iter_content(chunk_size=8192): 
+        for chunk in r.iter_content(chunk_size=1000000): 
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
                 sys.stdout.write(".")
         sys.stdout.write("\n")
         #f.flush()
 
-# TODO: check size, else remove
+size = os.path.getsize(dest)
+if size != server['size']:
+    print "error: file size mismatch (needed: {}, got: {})".format(server['size'], size)
+    os.remove(dest)
+    sys.exit(1)
+else:
+    print "info: file size match (needed: {}, got: {})".format(server['size'], size)
 
 # TODO: check sha1, else remove
+batch = 65536
+sha1 = hashlib.sha1()
+with open(dest, 'rb') as f:
+    while True:
+        data = f.read(batch)
+        if not data:
+            break
+        sha1.update(data)
 
-# TODO: update symlink if needed
+if sha1.hexdigest() != server['sha1']:
+    print "error: sha1 mismatch (needed: {}, got: {})".format(server['sha1'], sha1.hexdigest())
+    os.remove(dest)
+    sys.exit(1)
+else:
+    print "info: sha1 match (needed: {}, got: {})".format(server['sha1'], sha1.hexdigest())
+
 
 # TODO: main()
 
