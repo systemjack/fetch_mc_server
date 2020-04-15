@@ -7,7 +7,7 @@ import hashlib
 
 # TODO: proper logging
 # TODO: optional release param or latest snapshot
-# TODO: optional symlink to update
+# TODO: magic free config
 
 versions = requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()
 # {u'release': u'1.15.2', u'snapshot': u'20w15a'}
@@ -79,6 +79,12 @@ if sha1.hexdigest() != server['sha1']:
     sys.exit(1)
 else:
     print "info: sha1 match (needed: {}, got: {})".format(server['sha1'], sha1.hexdigest())
+
+
+# TODO: should symlink be updated based on config change even if file exists?
+alias = "minecraft_latest_release_server.jar"
+print "creating symlink: {}".format(alias)
+os.symlink(dest, alias)
 
 
 # TODO: main()
